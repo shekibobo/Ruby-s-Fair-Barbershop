@@ -6,11 +6,11 @@
 #
 # == Examples
 #   This command does blah blah blah.
-#     fair_barbershop foo.txt
+#     fair_barbershop
 #
 #   Other examples:
-#     fair_barbershop -q bar.doc
-#     fair_barbershop --verbose foo.html
+#     fair_barbershop -b 3 -c 7 -w 15
+#     fair_barbershop -b 3 -c 7 -i customer_list.txt
 #
 # == Usage
 #   fair_barbershop [options] source_file
