@@ -104,7 +104,6 @@ class FairBarbershop
       opts.on('-q', '--quiet')      { @options.quiet = true }
 
       # barbershop-specific options
-
       opts.separator ""
       opts.separator "Common Options:"
 
@@ -120,7 +119,13 @@ class FairBarbershop
         @options.waiting = n
       end
 
+      opts.on('-i FILE', '--input FILE', "Client Listing file (no default)") do |file|
+        @options.input_file = File.open(file, "r")
+      end
+
       # TO DO - add additional options
+
+      # show usage if parsing fails
       begin
         opts.parse!(@arguments)
       rescue
@@ -148,16 +153,12 @@ class FairBarbershop
     # True if required arguments were provided
     def arguments_valid?
       # TO DO - implement your real logic here
-      true if @arguments.length == 1
+      true # if @arguments.length >= 1
     end
 
     # Setup the arguments
     def process_arguments
       # TO DO - place in local vars, etc
-    end
-
-    def output_help
-      output_version
     end
 
     def output_version
