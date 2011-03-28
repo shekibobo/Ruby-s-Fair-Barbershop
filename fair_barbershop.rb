@@ -47,7 +47,7 @@ require 'ostruct'
 require 'date'
 
 
-class App
+class FairBarbershop
   VERSION = '0.0.1'
 
   attr_reader :options
@@ -186,5 +186,5 @@ end
 
 
 # Create and run the application
-app = App.new(ARGV, STDIN)
+app = FairBarbershop.new(ARGV, STDIN)
 app.run
