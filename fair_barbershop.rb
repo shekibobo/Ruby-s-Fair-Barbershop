@@ -47,7 +47,9 @@ require 'bundler/setup'
 require 'optparse'
 require 'ostruct'
 require 'date'
-require 'rainbow'
+
+require 'rainbow' # colorize output text
+require 'thread'
 
 class FairBarbershop
   VERSION = '0.0.1'
@@ -69,6 +71,7 @@ class FairBarbershop
     @options.waiting = 15
 
     # TO DO - add additional defaults
+
   end
 
   # Parse options, check arguments, then process the command
@@ -164,11 +167,85 @@ class FairBarbershop
 
     # Setup the arguments
     def process_arguments
-      # TO DO - place in local vars, etc
+      @mutex1, @mutex2, @mutex3 = Mutex.new, Mutex.new, Mutex.new
+
+      @max_capacity = ConditionVariable.new
+      @sofa = ConditionVariable.new
+      @barber_chair = ConditionVariable.new
+      @customer_ready = ConditionVariable.new
+      @payment = ConditionVariable.new
+      @coord = ConditionVariable.new
+
+      @finished = Array.new
+      @leave_b_chair = Array.new
+      @receipt = Array.new
+
     end
 
     def process_command
       # TO DO - do whatever this app does
+    end
+
+    def customer(id)
+      customer_id = id
+
+      # wait max_capacity
+      # enter shop
+      # wait mutex1
+      # count += 1
+      # customer_id = count
+      # signal mutex1
+      # wait sofa
+      # sit on sofa
+      # wait barber_chair
+      # get up from sofa
+      # signal sofa
+      # sit in barber chair
+      # wait mutex2
+      # enqueue1 customer_id
+      # signal customer_ready
+      # signal mutex2
+      # wait finished[customer_id]
+      # signal leave_my_chair[customer_id]
+      # pay
+      # wait mutex3
+      # enqueue2 customer_id
+      # signal payment
+      # signal mutex3
+      # wait receipt[customer_id]
+      # exit shop
+      # signal max_capacity
+    end
+
+    def barber
+      my_customer = 0
+
+      while true do
+        # wait customer_ready
+        # wait mutex2
+        # dequeue1 my_customer
+        # signal mutex2
+        # wait coord
+        # cut hair
+        # signal coord
+        # signal finished[my_customer]
+        # wait leave_my_chair[my_customer]
+        # signal barber_chair
+      end
+    end
+
+    def cashier
+      my_customer = 0
+      while true do
+        # wait payment
+        # wait mutex3
+        # dequeue2 my_customer
+        # signal mutex3
+        # wait coord
+        # accept pay
+        # signal coord
+        # signal receipt[my_customer]
+      end
     end
 end
 
