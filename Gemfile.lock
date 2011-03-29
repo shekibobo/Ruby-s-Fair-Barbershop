@@ -1,10 +1,15 @@
+GIT
+  remote: https://github.com/sickill/rainbow.git
+  revision: 451db1b08cc096890e98f469641c6b8c89037249
+  specs:
+    rainbow (1.1.1)
+
 GEM
   remote: http://rubygems.org/
   specs:
-    colored (1.2)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  colored
+  rainbow!

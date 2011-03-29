@@ -41,11 +41,13 @@
 
 # TO DO - update Synopsis, Examples, etc
 
+require 'rubygems'
+require 'bundler/setup'
 
 require 'optparse'
 require 'ostruct'
 require 'date'
-
+require 'rainbow'
 
 class FairBarbershop
   VERSION = '0.0.1'
@@ -98,7 +100,6 @@ class FairBarbershop
       opts.separator ""
       opts.separator "Specific Options:"
 
-      opts.on('-v', '--version')    { output_version ; exit 0 }
       opts.on('-h', '--help')       { puts opts; exit 0 }
       opts.on('-V', '--verbose')    { @options.verbose = true }
       opts.on('-q', '--quiet')      { @options.quiet = true }
@@ -153,7 +154,12 @@ class FairBarbershop
     # True if required arguments were provided
     def arguments_valid?
       # TO DO - implement your real logic here
-      true # if @arguments.length >= 1
+      if (@options.barbers > 0 and @options.chairs and @options.waiting > 0)
+        true
+      else
+        puts "Cannot have a working barber shop with negative numbers.".color(:red)
+        false
+      end
     end
 
     # Setup the arguments
@@ -161,24 +167,8 @@ class FairBarbershop
       # TO DO - place in local vars, etc
     end
 
-    def output_version
-      puts "#{File.basename(__FILE__)} version #{VERSION}"
-    end
-
     def process_command
       # TO DO - do whatever this app does
-
-      #process_standard_input # [Optional]
-    end
-
-    def process_standard_input
-      input = @stdin.read
-      # TO DO - process input
-
-      # [Optional]
-      #@stdin.each do |line|
-      #  # TO DO - process each line
-      #end
     end
 end
 
