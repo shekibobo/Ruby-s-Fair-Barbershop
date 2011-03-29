@@ -172,35 +172,40 @@ class FairBarbershop
       @mutex2 = Mutex.new
       @mutex3 = Mutex.new
 
-      @max_capacity = Semaphore.new(@options.waiting)
-      @sofa = Semaphore.new(5)
-      @barber_chair = Semaphore.new(@options.chairs)
-      @customer_ready = Semaphore.new(1)
-      @payment = Semaphore.new(1)
-      @coord = Semaphore.new(1)
+      @max_capacity = Semaphore.new @options.waiting
+      @sofa = Semaphore.new 4
+      @barber_chair = Semaphore.new @options.chairs
+      @customer_ready = Semaphore.new
+      @payment = Semaphore.new
+      @coord = Semaphore.new @options.barbers
 
-      @finished = Array.new(50, Semaphore)
-      @leave_b_chair = Array.new
-      @receipt = Array.new
+      @finished = Array.new(50).each { |f| f = Semaphore.new 0 }
+      @leave_b_chair = Array.new(50)
+      @receipt = Array.new(50).each { |r| r = Semaphore.new 0 }
 
     end
 
     def process_command
       # TO DO - do whatever this app does
+      50.times do |i|
+        customers[i] = Thread.new { customer i }
+      end
+      @options.barbers.times do |i|
+        barbers[i] = Thread.new { barber }
+      end
+      cashiers = Thread.new { cashier }
     end
 
-    def customer(0)
-      customer_id = 0
-      count = 0
+    def customer(id)
+      customer_id = id
 
       # wait max_capacity
       # enter shop
       # wait mutex1
       @mutex1.synchronize {
+        ## define the customer number by non-encapsulated means ##
         # count += 1
-        count += 1
         # customer_id = count
-        customer_id = count
         # signal mutex1
       }
       # wait sofa

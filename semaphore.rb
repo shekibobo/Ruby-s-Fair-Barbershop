@@ -1,5 +1,7 @@
 class Semaphore
-  def initialize(val=1)
+  require 'thread'
+
+  def initialize(val=0)
     @counter = val
     @waitingList = []
   end
