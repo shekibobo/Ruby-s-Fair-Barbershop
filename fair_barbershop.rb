@@ -50,7 +50,7 @@ require 'date'
 
 require 'rainbow' # colorize output text
 require 'thread'
-require 'semaphore'
+require './semaphore.rb'
 
 class FairBarbershop
   VERSION = '0.0.1'
@@ -187,13 +187,15 @@ class FairBarbershop
 
     def process_command
       # TO DO - do whatever this app does
+      @customers = Array.new 50
+      @barbers = Array.new @options.barbers
       50.times do |i|
-        customers[i] = Thread.new { customer i }
+        @customers[i] = Thread.new { customer i }
       end
       @options.barbers.times do |i|
-        barbers[i] = Thread.new { barber }
+        @barbers[i] = Thread.new { barber }
       end
-      cashiers = Thread.new { cashier }
+      @cashiers = Thread.new { cashier }
     end
 
     def customer(id)
