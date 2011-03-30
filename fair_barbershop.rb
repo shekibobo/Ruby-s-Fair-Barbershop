@@ -95,6 +95,11 @@ class FairBarbershop
 
   protected
 
+    first_names = %w( Jon Amy Erin Josh Matt Dave Paul Nick Brandon Sara
+                      Allison Michelle Carly Rachel Mike)
+    last_names = %w(Johnson Smith Kovach Steigmeyer Zorro Apple Danger
+                    Rodriguez Brando Carleson Thrace Adama Tyrol Gaeda)
+
     def parsed_options?
 
       # Specify options
@@ -179,14 +184,15 @@ class FairBarbershop
       @payment = Semaphore.new
       @coord = Semaphore.new @options.barbers
 
-      @finished = Array.new(50).each { |f| f = Semaphore.new 0 }
-      @leave_b_chair = Array.new(50)
-      @receipt = Array.new(50).each { |r| r = Semaphore.new 0 }
+      @finished = Array.new(50).each { |f| f = Semaphore.new }
+      @leave_b_chair = Array.new(50).each { |l| l = Semaphore.new }
+      @receipt = Array.new(50).each { |r| r = Semaphore.new }
 
     end
 
     def process_command
       # TO DO - do whatever this app does
+      puts "Setting up shop...".color(:yellow)
       @customers = Array.new 50
       @barbers = Array.new @options.barbers
       50.times do |i|
@@ -196,26 +202,40 @@ class FairBarbershop
         @barbers[i] = Thread.new { barber }
       end
       @cashiers = Thread.new { cashier }
+
+      puts "Shop is open for business.".color(:green)
     end
 
     def customer(id)
-      customer_id = id
+      name = "#{first_names.shuffle.first} #{last_names.shuffle.first}".color(:green) +
+        "(#{id})".color(:orange)
+
+      puts "#{name} is waiting for a haircut."
 
       # wait max_capacity
+      @max_capacity.wait
       # enter shop
+      enter_shop(name)
       # wait mutex1
       @mutex1.synchronize {
         ## define the customer number by non-encapsulated means ##
+        ## I don't think this is needed here ##
         # count += 1
         # customer_id = count
         # signal mutex1
       }
       # wait sofa
+      @sofa.wait
       # sit on sofa
+      sit_on_sofa(name)
       # wait barber_chair
+      @barber_chair.wait
       # get up from sofa
+      get_up_from_sofa(name)
       # signal sofa
+      @sofa.signal
       # sit in barber chair
+      sit_in_barber_chair(name)
       # wait mutex2
       @mutex2.synchronize {
         # enqueue1 customer_id
@@ -224,8 +244,11 @@ class FairBarbershop
         # signal mutex2
       }
       # wait finished[customer_id]
+      @finished[id].wait
       # signal leave_my_chair[customer_id]
+      @leave_b_chair[id].signal
       # pay
+      pay(name)
       # wait mutex3
       @mutex3.synchronize {
         # enqueue2 customer_id
@@ -234,8 +257,11 @@ class FairBarbershop
         # signal mutex3
       }
       # wait receipt[customer_id]
+      @receipt[id].wait
       # exit shop
+      exit_shop(name)
       # signal max_capacity
+      @max_capacity.signal
     end
 
     def barber
@@ -250,11 +276,17 @@ class FairBarbershop
           # signal mutex2
         }
         # wait coord
+        @coord.wait
         # cut hair
+        cut_hair
         # signal coord
+        @coord.signal
         # signal finished[my_customer]
+        @finished[my_customer].signal
         # wait leave_my_chair[my_customer]
+        @leave_b_chair[my_customer].wait
         # signal barber_chair
+        @barber_chair.signal
       end
     end
 
@@ -262,16 +294,54 @@ class FairBarbershop
       my_customer = 0
       while true do
         # wait payment
+        @payment.wait
         # wait mutex3
         @mutex3.synchronize {
           # dequeue2 my_customer
           # signal mutex3
         }
         # wait coord
+        @coord.wait
         # accept pay
+        accept_pay
         # signal coord
+        @coord.signal
         # signal receipt[my_customer]
+        @receipt[my_customer].signal
       end
+    end
+
+    ## Here be the action methods (things the characters do)
+    def enter_shop(name)
+      puts "#{name} just walked into the shop.".color(:blue)
+    end
+
+    def sit_on_sofa(name)
+      puts "#{name} sat on the couch.".color(:blue)
+    end
+
+    def get_up_from_sofa(name)
+      puts "#{name} got up from the sofa.".color(:blue)
+    end
+
+    def sit_in_barber_chair(name)
+      puts "#{name} sat in the barber chair.".color(:blue)
+    end
+
+    def pay(name)
+      puts "#{name} pays the cashier.".color(:blue)
+    end
+
+    def exit_shop(name)
+      puts "#{name} has left the shop.".color(:blue)
+    end
+
+    def cut_hair
+      puts "Cutting the customer's hair."
+    end
+
+    def accept_pay
+      puts "Accepting payment from customer."
     end
 end
 
