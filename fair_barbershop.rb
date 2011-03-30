@@ -53,7 +53,7 @@ require 'thread'
 require './semaphore.rb'
 
 class FairBarbershop
-  VERSION = '0.0.1'
+  VERSION = '0.0.5'
 
   attr_reader :options
 
@@ -383,10 +383,6 @@ class FairBarbershop
       }
     end
 end
-
-
-# TO DO - Add your Modules, Classes, etc
-
 
 # Create and run the application
 app = FairBarbershop.new(ARGV, STDIN)
