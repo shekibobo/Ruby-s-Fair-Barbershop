@@ -199,12 +199,14 @@ class FairBarbershop
       @barbers = []
       puts "Shop is open for business.".color(:green)
       @shop_open = true
+      @customers_waiting = 0
 
       50.times do |i|
         @customers << Thread.new { customer i }
         @finished << Semaphore.new
         @leave_b_chair << Semaphore.new
         @receipt << Semaphore.new
+        @customers_waiting += 1
       end
 
       @options.barbers.times do |i|
@@ -223,7 +225,7 @@ class FairBarbershop
         t.join
       end
 
-      @cashier.join
+      @cashiers.join
 
       puts "Closing time!".color :green
 
@@ -297,6 +299,7 @@ class FairBarbershop
       c_name = ""
 
       while @shop_open do
+        break if @customers_waiting < @barbers.size
         # wait customer_ready
         @customer_ready.wait
         # wait mutex2
@@ -326,6 +329,7 @@ class FairBarbershop
       my_customer = 0
       c_name = ""
       while @shop_open do
+        break if @customers_waiting == 0
         # wait payment
         @payment.wait
         # wait mutex3
@@ -389,6 +393,7 @@ class FairBarbershop
         puts "Cutting #{name}'s hair.".color(:cyan)
       }
       sleep(rand(5))
+      @mutex1.synchronize { puts "#{@customers_waiting -= 1}" }
     end
 
     def accept_pay(name)
