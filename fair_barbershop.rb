@@ -179,9 +179,9 @@ class FairBarbershop
       @payment = Semaphore.new
       @coord = Semaphore.new @options.barbers
 
-      @finished = Array.new(50).each { |f| f = Semaphore.new }
-      @leave_b_chair = Array.new(50).each { |l| l = Semaphore.new }
-      @receipt = Array.new(50).each { |r| r = Semaphore.new }
+      @finished = []
+      @leave_b_chair = []
+      @receipt = []
 
       @cut_q = Queue.new
       @cash_q = Queue.new
@@ -194,16 +194,22 @@ class FairBarbershop
     end
 
     def process_command
-      # TO DO - do whatever this app does
       puts "Setting up shop...".color(:yellow)
+
       @customers = []
       @barbers = []
+
       50.times do |i|
         @customers << Thread.new { customer i }
+        @finished << Semaphore.new
+        @leave_b_chair << Semaphore.new
+        @receipt << Semaphore.new
       end
+
       @options.barbers.times do |i|
         @barbers << Thread.new { barber }
       end
+
       @cashiers = Thread.new { cashier }
 
       @customers.each do |t| # wait until all customers have had haircuts
@@ -222,17 +228,17 @@ class FairBarbershop
       # }
 
       # wait max_capacity
-      @max_capacity.wait
+      @max_capacity.down
       # enter shop
       enter_shop(name)
       # wait mutex1
-      @mutex1.synchronize {
+      # @mutex1.synchronize {
         ## define the customer number by non-encapsulated means ##
         ## I don't think this is needed here ##
         # count += 1
         # customer_id = count
         # signal mutex1
-      }
+      # }
       # wait sofa
       @sofa.wait
       # sit on sofa
@@ -247,6 +253,7 @@ class FairBarbershop
       sit_in_barber_chair(name)
       # wait mutex2
       @mutex2.synchronize {
+
         # enqueue1 customer_id
         @cut_q << [id, name]
         # signal customer_ready
@@ -272,7 +279,7 @@ class FairBarbershop
       # exit shop
       exit_shop(name)
       # signal max_capacity
-      @max_capacity.signal
+      @max_capacity.up
     end
 
     def barber
@@ -281,11 +288,12 @@ class FairBarbershop
 
       while true do
         # wait customer_ready
-        @customer_ready.wait(@mutex2)
+        @customer_ready.wait
+        @mutex1.synchronize { puts "customer ready" }
         # wait mutex2
         @mutex2.synchronize {
           # dequeue1 my_customer
-          my_customer, c_name = cut_q.pop
+          my_customer, c_name = @cut_q.pop
           # signal mutex2
         }
         # wait coord
@@ -312,7 +320,7 @@ class FairBarbershop
         # wait mutex3
         @mutex3.synchronize {
           # dequeue2 my_customer
-          my_customer, c_name = cash_q.pop
+          my_customer, c_name = @cash_q.pop
           # signal mutex3
         }
         # wait coord
