@@ -373,13 +373,13 @@ class FairBarbershop
 
     def cut_hair(name)
       @mutex1.synchronize {
-        puts "Cutting #{name}'s hair."
+        puts "Cutting #{name}'s hair.".color(:cyan)
       }
     end
 
     def accept_pay(name)
       @mutex1.synchronize {
-        puts "Accepting payment from #{name}."
+        puts "Accepting payment from #{name}.".color(:yellow)
       }
     end
 end
