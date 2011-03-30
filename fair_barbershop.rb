@@ -190,7 +190,6 @@ class FairBarbershop
                         Allison Michelle Carly Rachel Mike)
       @last_names = %w(Johnson Smith Kovach Steigmeyer Zorro Apple Danger
                        Rodriguez Brando Carleson Thrace Adama Tyrol Gaeda)
-
     end
 
     def process_command
@@ -198,6 +197,8 @@ class FairBarbershop
 
       @customers = []
       @barbers = []
+      puts "Shop is open for business.".color(:green)
+      @shop_open = true
 
       50.times do |i|
         @customers << Thread.new { customer i }
@@ -216,7 +217,16 @@ class FairBarbershop
         t.join
       end
 
-      puts "Shop is open for business.".color(:green)
+      @shop_open = false
+
+      @barbers.each do |t|
+        t.join
+      end
+
+      @cashier.join
+
+      puts "Closing time!".color :green
+
     end
 
     def customer(id)
@@ -286,10 +296,9 @@ class FairBarbershop
       my_customer = 0
       c_name = ""
 
-      while true do
+      while @shop_open do
         # wait customer_ready
         @customer_ready.wait
-        @mutex1.synchronize { puts "customer ready" }
         # wait mutex2
         @mutex2.synchronize {
           # dequeue1 my_customer
@@ -309,12 +318,14 @@ class FairBarbershop
         # signal barber_chair
         @barber_chair.signal
       end
+
+      @mutex1.synchronize { puts "Job's done!".color :yellow }
     end
 
     def cashier
       my_customer = 0
       c_name = ""
-      while true do
+      while @shop_open do
         # wait payment
         @payment.wait
         # wait mutex3
@@ -332,6 +343,8 @@ class FairBarbershop
         # signal receipt[my_customer]
         @receipt[my_customer].signal
       end
+
+      @mutex1.synchronize { puts "Locking up the register.".color :yellow }
     end
 
     ## Here be the action methods (things the characters do)
@@ -375,6 +388,7 @@ class FairBarbershop
       @mutex1.synchronize {
         puts "Cutting #{name}'s hair.".color(:cyan)
       }
+      sleep(rand(5))
     end
 
     def accept_pay(name)
