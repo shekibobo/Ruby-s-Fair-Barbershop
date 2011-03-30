@@ -3,33 +3,34 @@ class Semaphore
 
   def initialize(val=0)
     @counter = val
-    @waitingList = []
+    @waiting_list = []
+    @mutex = Mutex.new
   end
 
   def wait
-    Thread.exclusive do
+    @mutex.synchronize do
       # decrement and add to the waiting list
-      @counter -= 1
-      if @counter < 0
-        @waitingList.push(Thread.current)
-        Thread.stop
+      if (@counter -= 1) < 0
+        @waiting_list.push Thread.current
+        @mutex.sleep
       end
-      self # return itself
     end
   end
 
   def signal
-    Thread.exclusive do
-      begin
-        @counter += 1
-        if @counter <= 0
-          thread = @waitingList.shift # FIFO => grab first added
-          thread.wakeup if thread # if the shift produced a thread, wake it up
+    @mutex.synchronize do
+      if (@counter += 1) <= 0
+        begin
+          t = @waiting_list.shift # FIFO => grab first added
+          t.wakeup if t # if we popped a thread, wake it up
+        rescue ThreadError
+          puts "problem in signal".color(:pink)
+          retry
         end
-      rescue ThreadError
-        retry
       end
-      self # return itself
     end
   end
+
+  alias down wait
+  alias up signal
 end
