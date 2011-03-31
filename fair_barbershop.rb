@@ -124,6 +124,10 @@ class FairBarbershop
         @options.waiting = n
       end
 
+      opts.on('-r N', '--registers N', Integer, "N registers operating") do |n|
+        @options.registers = n
+      end
+
       opts.on('-i FILE', '--input FILE', "Client Listing file (no default)") do |file|
         @options.input_file = File.open(file, "r")
       end
@@ -157,7 +161,6 @@ class FairBarbershop
 
     # True if required arguments were provided
     def arguments_valid?
-      # TO DO - implement your real logic here
       if (@options.barbers > 0 and @options.chairs and @options.waiting > 0)
         true
       else
@@ -186,6 +189,26 @@ class FairBarbershop
       @cut_q = Queue.new
       @cash_q = Queue.new
 
+      # read the input file
+      @customer_schedule = []
+      @customer_reservations = 50 # default number of customers
+      unless @options.input_file.nil?
+        # there are two ways to do this...
+        # they way I'll handle this programatically:
+        #   read in the first number. fine.  Use the actual number of lines
+        #   as the number of customers in this program.
+        @customer_reservations = @options.input_file.readline.to_i # first line
+        @options.input_file.each do |line| # all the other lines into a 2darray
+          @customer_schedule << line.split.map { |n| n.to_i }
+        end
+
+        if @customer_reservations != @customer_schedule.size
+          puts "Inconsistent data file. Using number of appointments in list.".color :red
+          @customer_reservations = @customer_schedule.size
+        end
+      end
+
+      # set up customer names
       @first_names = %w(Jon Amy Erin Josh Matt Dave Paul Nick Brandon Sara
                         Allison Michelle Carly Rachel Mike)
       @last_names = %w(Johnson Smith Kovach Steigmeyer Zorro Apple Danger
@@ -197,23 +220,22 @@ class FairBarbershop
 
       @customers = []
       @barbers = []
+      @cashiers = []
       puts "Shop is open for business.".color(:green)
       @shop_open = true
-      @customers_waiting = 0
 
-      50.times do |i|
+      @customer_reservations.times do |i|
         @customers << Thread.new { customer i }
         @finished << Semaphore.new
         @leave_b_chair << Semaphore.new
         @receipt << Semaphore.new
-        @customers_waiting += 1
       end
 
       @options.barbers.times do |i|
         @barbers << Thread.new { barber }
       end
 
-      @cashiers = Thread.new { cashier }
+      @cashiers << Thread.new { cashier }
 
       @customers.each do |t| # wait until all customers have had haircuts
         t.join
@@ -225,7 +247,9 @@ class FairBarbershop
         t.join
       end
 
-      @cashiers.join
+      @cashiers.each do |t|
+        t.join
+      end
 
       puts "Closing time!".color :green
 
@@ -299,7 +323,7 @@ class FairBarbershop
       c_name = ""
 
       while @shop_open do
-        break if @customers_waiting < @barbers.size
+        break if @customer_reservations < @barbers.size
         # wait customer_ready
         @customer_ready.wait
         # wait mutex2
@@ -329,7 +353,7 @@ class FairBarbershop
       my_customer = 0
       c_name = ""
       while @shop_open do
-        break if @customers_waiting == 0
+        break if @customer_reservations < @cashiers.size
         # wait payment
         @payment.wait
         # wait mutex3
@@ -393,7 +417,7 @@ class FairBarbershop
         puts "Cutting #{name}'s hair.".color(:cyan)
       }
       sleep(rand(5))
-      @mutex1.synchronize { puts "#{@customers_waiting -= 1}" }
+      @mutex1.synchronize { @customer_reservations -= 1 } # decrement customer line
     end
 
     def accept_pay(name)
