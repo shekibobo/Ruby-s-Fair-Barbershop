@@ -70,6 +70,7 @@ class FairBarbershop
     @options.barbers = 3
     @options.chairs = 7
     @options.waiting = 15
+    @options.registers = 1
 
     # TO DO - add additional defaults
 
@@ -227,26 +228,32 @@ class FairBarbershop
       puts "Shop is open for business.".color(:green)
       @shop_open = true
 
+      # start customer threads
       @customer_reservations.times do |i|
         @customers << Thread.new {
-          if @customer_schedule.empty?
+          if @customer_schedule.empty? # use the defaults
             customer i
-          else
+          else  # get the entry time and duration from the file
             entry_time, cut_duration = @customer_schedule.pop
             customer i, entry_time, cut_duration
           end
         }
 
+        # setup semaphores for this customer thread
         @finished << Semaphore.new
         @leave_b_chair << Semaphore.new
         @receipt << Semaphore.new
       end
 
+      # start barber threads
       @options.barbers.times do |i|
         @barbers << Thread.new { barber }
       end
 
-      @cashiers << Thread.new { cashier }
+      # start cashier threads
+      @options.registers.times do |i|
+        @cashiers << Thread.new { cashier }
+      end
 
       @t_timer = Thread.new {
         while @shop_open do
