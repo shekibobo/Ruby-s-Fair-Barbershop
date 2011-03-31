@@ -1,11 +1,10 @@
 #!/usr/bin/env ruby
 
 # == Synopsis
-#   This is a sample description of the application.
-#   Blah blah blah.
+#   This is an implementation of Hilzer's Fair Barbershop solution in Ruby 1.9.2
 #
 # == Examples
-#   This command does blah blah blah.
+#   This command does runs the program with all the defaults.
 #     fair_barbershop
 #
 #   Other examples:
@@ -22,10 +21,11 @@
 #   -v, --version       Display the version, then exit
 #   -q, --quiet         Output as little as possible, overrides verbose
 #   -V, --verbose       Verbose output
-#   TO DO - add additional options
+#
 #   -b N, --barbers N   Set number of barbers
 #   -c N, --chairs N    Set number of chairs
 #   -w N, --waiting N   Set number of customers waiting
+#   -r N, --registers N Set the number of registers available
 #
 # == Author
 #   Joshua Kovach
@@ -37,9 +37,9 @@
 # == References
 #   Ruby Command-line Argument skeleton code from Todd Werth
 #     http://blog.toddwerth.com/entries/show/5
-
-
-# TO DO - update Synopsis, Examples, etc
+#   Ruby Counting Semaphore Proposal Patch
+#     http://redmine.ruby-lang.org/attachments/1109/final-semaphore.patch
+#
 
 require 'rubygems'
 require 'bundler/setup'
@@ -165,10 +165,11 @@ class FairBarbershop
 
     # True if required arguments were provided
     def arguments_valid?
-      if (@options.barbers > 0 and @options.chairs and @options.waiting > 0)
+      if (@options.barbers > 0 and @options.chairs > 0 and
+          @options.waiting > 0 and @options.registers > 0)
         true
       else
-        puts "Cannot have a working barber shop with negative numbers.".color(@color_err)
+        puts "Cannot have a working barber shop without positive numbers.".color(@color_err)
         false
       end
     end
@@ -283,6 +284,15 @@ class FairBarbershop
 
     end
 
+    #
+    # Customers have a name, an id, and are schedule for a certain time slot
+    # and an expected appointment duration.  If possible, enter the shop, sit on
+    # the sofa (or wait to), wait for an open barber chair, sit in the barber
+    # chair, get a cut, pay, get a receipt, then leave the shop.
+    #
+    # Currently supported: customer names, durations
+    # TODO: customer arrival time
+    #
     def customer(id, arrival_time=0, cut_duration=rand(5))
       # identify customers by name
       name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color("#ffc482") +
@@ -323,6 +333,11 @@ class FairBarbershop
       @max_capacity.up
     end
 
+    #
+    # The barber loops waiting for a customer to sit in his chair.
+    # When the customer sits, cut their hair.  If there are no more customers
+    # waiting, go ahead and call it quits.
+    #
     def barber
       my_customer = 0
       c_name = ""
@@ -349,6 +364,10 @@ class FairBarbershop
       mputs "Job's done!".color @color_barb
     end
 
+    #
+    # Wait for a customer to present payment, take their payment, and give them
+    # a receipt. Exit if there are no more customers that need to pay.
+    #
     def cashier
       my_customer = 0
       c_name = ""
@@ -407,6 +426,7 @@ class FairBarbershop
       mputs "Accepting payment from #{name}.".color(@color_cash)
     end
 
+    # this is a synchronized print method using a mutex
     def mputs(str="")
       @mutex1.synchronize { puts "#{@time}: ".color(@color_time) + str }
     end
