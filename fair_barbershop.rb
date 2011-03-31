@@ -2,6 +2,12 @@
 
 # == Synopsis
 #   This is an implementation of Hilzer's Fair Barbershop solution in Ruby 1.9.2
+#   with the gem 'rainbow' used for text colorization.
+#
+# == Notes
+#   Tested on Ruby 1.9.2.
+#   Requires gem 'bundler'. Run gem install bundler to install.
+#   Requires gem 'rainbow'. Run 'bundle install' in root directory to install.
 #
 # == Examples
 #   This command does runs the program with all the defaults.
