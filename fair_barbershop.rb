@@ -213,6 +213,8 @@ class FairBarbershop
                         Allison Michelle Carly Rachel Mike)
       @last_names = %w(Johnson Smith Kovach Steigmeyer Zorro Apple Danger
                        Rodriguez Brando Carleson Thrace Adama Tyrol Gaeda)
+
+      @time = 0
     end
 
     def process_command
@@ -221,11 +223,20 @@ class FairBarbershop
       @customers = []
       @barbers = []
       @cashiers = []
+
       puts "Shop is open for business.".color(:green)
       @shop_open = true
 
       @customer_reservations.times do |i|
-        @customers << Thread.new { customer i }
+        @customers << Thread.new {
+          if @customer_schedule.empty?
+            customer i
+          else
+            entry_time, cut_duration = @customer_schedule.pop
+            customer i, entry_time, cut_duration
+          end
+        }
+
         @finished << Semaphore.new
         @leave_b_chair << Semaphore.new
         @receipt << Semaphore.new
@@ -236,6 +247,13 @@ class FairBarbershop
       end
 
       @cashiers << Thread.new { cashier }
+
+      @t_timer = Thread.new {
+        while @shop_open do
+          sleep(1)
+          @time += 1
+        end
+      }
 
       @customers.each do |t| # wait until all customers have had haircuts
         t.join
@@ -255,7 +273,7 @@ class FairBarbershop
 
     end
 
-    def customer(id)
+    def customer(id, arrival_time=0, cut_duration=rand(5))
       name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color(:green) +
         "(#{id})".color(:yellow)
 
@@ -291,7 +309,7 @@ class FairBarbershop
       @mutex2.synchronize {
 
         # enqueue1 customer_id
-        @cut_q << [id, name]
+        @cut_q << [id, name, cut_duration]
         # signal customer_ready
         @customer_ready.signal
         # signal mutex2
@@ -321,6 +339,7 @@ class FairBarbershop
     def barber
       my_customer = 0
       c_name = ""
+      cut_duration = 0
 
       while @shop_open do
         break if @customer_reservations < @barbers.size
@@ -329,13 +348,13 @@ class FairBarbershop
         # wait mutex2
         @mutex2.synchronize {
           # dequeue1 my_customer
-          my_customer, c_name = @cut_q.pop
+          my_customer, c_name,  cut_duration = @cut_q.pop
           # signal mutex2
         }
         # wait coord
         @coord.wait
         # cut hair
-        cut_hair(c_name)
+        cut_hair(c_name, cut_duration)
         # signal coord
         @coord.signal
         # signal finished[my_customer]
@@ -412,11 +431,11 @@ class FairBarbershop
       }
     end
 
-    def cut_hair(name)
+    def cut_hair(name, duration)
       @mutex1.synchronize {
         puts "Cutting #{name}'s hair.".color(:cyan)
       }
-      sleep(rand(5))
+      sleep(duration)
       @mutex1.synchronize { @customer_reservations -= 1 } # decrement customer line
     end
 
