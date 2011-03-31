@@ -72,7 +72,12 @@ class FairBarbershop
     @options.waiting = 15
     @options.registers = 1
 
-    # TO DO - add additional defaults
+    # colors for actors
+    @color_barb = "#ff6600"
+    @color_cust = "#af40f6"
+    @color_cash = "#a3c5ef"
+    @color_time = "#0fad3e"
+    @color_err  = "#ff3333"
 
   end
 
@@ -133,8 +138,6 @@ class FairBarbershop
         @options.input_file = File.open(file, "r")
       end
 
-      # TO DO - add additional options
-
       # show usage if parsing fails
       begin
         opts.parse!(@arguments)
@@ -165,7 +168,7 @@ class FairBarbershop
       if (@options.barbers > 0 and @options.chairs and @options.waiting > 0)
         true
       else
-        puts "Cannot have a working barber shop with negative numbers.".color(:red)
+        puts "Cannot have a working barber shop with negative numbers.".color(@color_err)
         false
       end
     end
@@ -204,7 +207,7 @@ class FairBarbershop
         end
 
         if @customer_reservations != @customer_schedule.size
-          puts "Inconsistent data file. Using number of appointments in list.".color :red
+          puts "Inconsistent data file. Using number of appointments in list.".color @color_err
           @customer_reservations = @customer_schedule.size
         end
       end
@@ -219,13 +222,13 @@ class FairBarbershop
     end
 
     def process_command
-      puts "Setting up shop...".color(:yellow)
+      puts "Setting up shop...".color @color_barb
 
       @customers = []
       @barbers = []
       @cashiers = []
 
-      puts "Shop is open for business.".color(:green)
+      puts "Shop is open for business.".color @color_barb
       @shop_open = true
 
       # start customer threads
@@ -276,66 +279,47 @@ class FairBarbershop
         t.join
       end
 
-      puts "Closing time!".color :green
+      puts "Closing time!".color @color_barb
 
     end
 
     def customer(id, arrival_time=0, cut_duration=rand(5))
-      name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color(:green) +
+      # identify customers by name
+      name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color("#ffc482") +
         "(#{id})".color(:yellow)
 
-      # wait max_capacity
       @max_capacity.down
-      # enter shop
       enter_shop(name)
-      # wait mutex1
-      # @mutex1.synchronize {
-        ## define the customer number by non-encapsulated means ##
-        ## I don't think this is needed here ##
-        # count += 1
-        # customer_id = count
-        # signal mutex1
-      # }
-      # wait sofa
-      @sofa.wait
-      # sit on sofa
-      sit_on_sofa(name)
-      # wait barber_chair
-      @barber_chair.wait
-      # get up from sofa
-      get_up_from_sofa(name)
-      # signal sofa
-      @sofa.signal
-      # sit in barber chair
-      sit_in_barber_chair(name)
-      # wait mutex2
-      @mutex2.synchronize {
 
+      @sofa.wait
+      sit_on_sofa(name)
+
+      @barber_chair.wait
+
+      get_up_from_sofa(name)
+      @sofa.signal
+
+      sit_in_barber_chair(name)
+
+      @mutex2.synchronize {
         # enqueue1 customer_id
         @cut_q << [id, name, cut_duration]
-        # signal customer_ready
         @customer_ready.signal
-        # signal mutex2
       }
-      # wait finished[customer_id]
+
       @finished[id].wait
-      # signal leave_my_chair[customer_id]
       @leave_b_chair[id].signal
-      # pay
       pay(name)
-      # wait mutex3
+
       @mutex3.synchronize {
         # enqueue2 customer_id
         @cash_q << [id, name]
-        # signal payment
         @payment.signal
-        # signal mutex3
       }
-      # wait receipt[customer_id]
+
       @receipt[id].wait
-      # exit shop
       exit_shop(name)
-      # signal max_capacity
+
       @max_capacity.up
     end
 
@@ -346,94 +330,85 @@ class FairBarbershop
 
       while @shop_open do
         break if @customer_reservations < @barbers.size
-        # wait customer_ready
+
         @customer_ready.wait
-        # wait mutex2
+
         @mutex2.synchronize {
           # dequeue1 my_customer
           my_customer, c_name,  cut_duration = @cut_q.pop
-          # signal mutex2
         }
-        # wait coord
+
         @coord.wait
-        # cut hair
         cut_hair(c_name, cut_duration)
-        # signal coord
         @coord.signal
-        # signal finished[my_customer]
         @finished[my_customer].signal
-        # wait leave_my_chair[my_customer]
         @leave_b_chair[my_customer].wait
-        # signal barber_chair
         @barber_chair.signal
       end
 
-      mputs "Job's done!".color :yellow
+      mputs "Job's done!".color @color_barb
     end
 
     def cashier
       my_customer = 0
       c_name = ""
+
       while @shop_open do
         break if @customer_reservations < @cashiers.size
-        # wait payment
+
         @payment.wait
-        # wait mutex3
+
         @mutex3.synchronize {
           # dequeue2 my_customer
           my_customer, c_name = @cash_q.pop
-          # signal mutex3
         }
-        # wait coord
+
         @coord.wait
-        # accept pay
         accept_pay(c_name)
-        # signal coord
         @coord.signal
-        # signal receipt[my_customer]
         @receipt[my_customer].signal
       end
 
-      mputs "Locking up the register.".color :yellow
+      mputs "Locking up the register.".color @color_cash
     end
 
     ## Here be the action methods (things the characters do)
     def enter_shop(name)
-      mputs "#{name} just walked into the shop.".color(:blue)
+      mputs "#{name}" + " just walked into the shop.".color(@color_cust)
     end
 
     def sit_on_sofa(name)
-      mputs "#{name} sat on the couch.".color(:blue)
+      mputs "#{name}" + " sat on the couch.".color(@color_cust)
     end
 
     def get_up_from_sofa(name)
-      mputs "#{name} got up from the sofa.".color(:blue)
+      mputs "#{name}" + " got up from the sofa.".color(@color_cust)
     end
 
     def sit_in_barber_chair(name)
-      mputs "#{name} sat in the barber chair.".color(:blue)
+      mputs "#{name}" + " sat in the barber chair.".color(@color_cust)
     end
 
     def pay(name)
-      mputs "#{name} pays the cashier.".color(:blue)
+      mputs "#{name}" + " pays the cashier.".color(@color_cust)
     end
 
     def exit_shop(name)
-      mputs "#{name} has left the shop.".color(:blue)
+      mputs "#{name}" + " has left the shop.".color(@color_cust)
     end
 
     def cut_hair(name, duration)
-      mputs "Cutting #{name}'s hair.".color(:cyan)
+      mputs "Cutting ".color(@color_barb) + "#{name}" + "'s hair.".color(@color_barb)
       sleep(duration)
       @mutex1.synchronize { @customer_reservations -= 1 } # decrement customer line
     end
 
     def accept_pay(name)
-      mputs "Accepting payment from #{name}.".color(:yellow)
+      mputs "Accepting payment from #{name}.".color(@color_cash)
     end
 
     def mputs(str="")
-      @mutex1.synchronize { puts str }
+      @mutex1.synchronize { puts "#{@time}: ".color(@color_time) + str }
     end
 end
 
