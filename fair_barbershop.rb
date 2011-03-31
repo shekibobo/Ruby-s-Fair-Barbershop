@@ -284,10 +284,6 @@ class FairBarbershop
       name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color(:green) +
         "(#{id})".color(:yellow)
 
-      # @mutex1.synchronize {
-      #   puts "#{name} is waiting for a haircut."
-      # }
-
       # wait max_capacity
       @max_capacity.down
       # enter shop
@@ -372,7 +368,7 @@ class FairBarbershop
         @barber_chair.signal
       end
 
-      @mutex1.synchronize { puts "Job's done!".color :yellow }
+      mputs "Job's done!".color :yellow
     end
 
     def cashier
@@ -398,58 +394,46 @@ class FairBarbershop
         @receipt[my_customer].signal
       end
 
-      @mutex1.synchronize { puts "Locking up the register.".color :yellow }
+      mputs "Locking up the register.".color :yellow
     end
 
     ## Here be the action methods (things the characters do)
     def enter_shop(name)
-      @mutex1.synchronize {
-        puts "#{name} just walked into the shop.".color(:blue)
-      }
+      mputs "#{name} just walked into the shop.".color(:blue)
     end
 
     def sit_on_sofa(name)
-      @mutex1.synchronize {
-        puts "#{name} sat on the couch.".color(:blue)
-      }
+      mputs "#{name} sat on the couch.".color(:blue)
     end
 
     def get_up_from_sofa(name)
-      @mutex1.synchronize {
-        puts "#{name} got up from the sofa.".color(:blue)
-      }
+      mputs "#{name} got up from the sofa.".color(:blue)
     end
 
     def sit_in_barber_chair(name)
-      @mutex1.synchronize {
-        puts "#{name} sat in the barber chair.".color(:blue)
-      }
+      mputs "#{name} sat in the barber chair.".color(:blue)
     end
 
     def pay(name)
-      @mutex1.synchronize {
-        puts "#{name} pays the cashier.".color(:blue)
-      }
+      mputs "#{name} pays the cashier.".color(:blue)
     end
 
     def exit_shop(name)
-      @mutex1.synchronize {
-        puts "#{name} has left the shop.".color(:blue)
-      }
+      mputs "#{name} has left the shop.".color(:blue)
     end
 
     def cut_hair(name, duration)
-      @mutex1.synchronize {
-        puts "Cutting #{name}'s hair.".color(:cyan)
-      }
+      mputs "Cutting #{name}'s hair.".color(:cyan)
       sleep(duration)
       @mutex1.synchronize { @customer_reservations -= 1 } # decrement customer line
     end
 
     def accept_pay(name)
-      @mutex1.synchronize {
-        puts "Accepting payment from #{name}.".color(:yellow)
-      }
+      mputs "Accepting payment from #{name}.".color(:yellow)
+    end
+
+    def mputs(str="")
+      @mutex1.synchronize { puts str }
     end
 end
 
