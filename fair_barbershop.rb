@@ -186,7 +186,7 @@ class FairBarbershop
       @mutex2 = Mutex.new
       @mutex3 = Mutex.new
 
-      @max_capacity = Semaphore.new @options.waiting
+      @max_capacity = Semaphore.new @options.waiting + @options.chairs
       @sofa = Semaphore.new 4
       @barber_chair = Semaphore.new @options.chairs
       @customer_ready = Semaphore.new
@@ -196,6 +196,9 @@ class FairBarbershop
       @finished = []
       @leave_b_chair = []
       @receipt = []
+
+      @wakeup = Hash.new
+      @wakeup.default = []
 
       @cut_q = Queue.new
       @cash_q = Queue.new
@@ -267,6 +270,9 @@ class FairBarbershop
 
       @t_timer = Thread.new {
         while @shop_open do
+          @wakeup[@time].each do |customer|
+            customer.signal
+          end
           sleep(1)
           @time += 1
         end
@@ -299,10 +305,12 @@ class FairBarbershop
     # Currently supported: customer names, durations
     # TODO: customer arrival time
     #
-    def customer(id, arrival_time=0, cut_duration=rand(5))
+    def customer(id, arrival_time=rand(30), cut_duration=rand(5))
       # identify customers by name
       name = "#{@first_names.shuffle.first} #{@last_names.shuffle.first}".color("#ffc482") +
         "(#{id})".color(:yellow)
+
+      wakeup(arrival_time).wait
 
       @max_capacity.down
       enter_shop(name)
@@ -435,6 +443,12 @@ class FairBarbershop
     # this is a synchronized print method using a mutex
     def mputs(str="")
       @mutex1.synchronize { puts "#{@time}: ".color(@color_time) + str }
+    end
+
+    def wakeup (time=0)
+      sem = Semaphore.new
+      @wakeup[time] += [sem]
+      sem
     end
 end
 
